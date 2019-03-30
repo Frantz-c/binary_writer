@@ -1,73 +1,35 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <unistd.h>
 
-enum hexa_char
+#include "binw.h"
+
+void	add_byte_int(int byte, char *bin[], int *binl, int *cur)
 {
-	HEXA_MIN, HEXA_MAJ, HEXA_BOTH
-};
-
-#define HEXA_CHAR	HEXA_BOTH
-
-int		ishexa(int c, int maj)
-{
-	if (maj == 1)
-		return ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'));
-	if (maj == 2)
-		return ((c >= '0' && c <= '9')
-			|| (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
-	return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
-}
-
-static inline const char		*left_trim(const char *s)
-{
-	while (*s == ' ' || *s == '\n')
-		s++;
-	if (*s == '0')
+	if (*cur == *binl - 1)
 	{
-		while (*s == '0')
-			s++;
-		if (!ishexa(*s, HEXA_CHAR))
-			s--;
-		return (s);
+		*binl += 128;
+		if ((*bin = realloc(*bin, *binl)) == NULL)
+		{
+			fprintf(stderr, "memory allocation error\n");
+			exit (1);
+		}
 	}
-	if (!ishexa(*s, HEXA_CHAR))
-		return (NULL);
-	return (s);
+	(*bin)[(*cur)++] = byte;
 }
 
-static unsigned int				get_base_value(char c)
+char	*add_byte_octal(char buf[], char *bin[], int *binl, int *cur)
 {
-	if (c >= 'a' && c <= 'f')
-		return (c - ('a' - 10));
-	else if (c >= 'A' && c <= 'F')
-		return (c - ('A' - 10));
-	return (c - '0');
-}
-
-static inline unsigned int		ft_strtoi(const char *s)
-{
-	unsigned int	n;
-
-	n = 0;
-	while (1)
+	if (*cur == *binl - 1)
 	{
-		if (*s > 'f' || (*s > 'F' && *s < 'a')
-				|| (*s > '9' && *s < 'A') || *s < '0')
-			break ;
-		n *= 16;
-		n += get_base_value(*(s++));
+		*binl += 128;
+		if ((*bin = realloc(*bin, *binl)) == NULL)
+		{
+			fprintf(stderr, "memory allocation error\n");
+			exit (1);
+		}
 	}
-	return (n);
-}
-
-static inline unsigned int		atoi_hexa(const char *s)
-{
-	if ((s = left_trim(s)) == NULL)
-		return (0);
-	return (ft_strtoi(s));
+	(*bin)[(*cur)++] = (char)atoi_octal(buf);
+	while (isoctal(*buf))
+		buf++;
+	return (buf);
 }
 
 char	*add_byte(char buf[], char *bin[], int *binl, int *cur)
@@ -82,7 +44,61 @@ char	*add_byte(char buf[], char *bin[], int *binl, int *cur)
 		}
 	}
 	(*bin)[(*cur)++] = (char)atoi_hexa(buf);
-	return (buf + 2);
+	while (ishexa(*buf, HEXA_CHAR))
+		buf++;
+	return (buf);
+}
+
+void	add_character(char *buf[], char *bin[], int *binl, int *cur)
+{
+	char	*s = *buf;
+
+	if (*s == '\\')
+	{
+		s++;
+		if (*s == 'n')
+		{
+			s++;
+			add_byte_int(012, bin, binl, cur);
+		}
+		else if (*s == 't')
+		{
+			s++;
+			add_byte_int(0x9, bin, binl, cur);
+		}
+		else if (isoctal(*s))
+		{
+			s = add_byte_octal(s, bin, binl, cur);
+		}
+		else if (*s == 'x' && ishexa(s[1], HEXA_CHAR))
+		{
+			s++;
+			s = add_byte(s, bin, binl, cur);
+		}
+		else
+		{
+			add_byte_int(*(s++), bin, binl, cur);
+		}
+	}
+	else
+	{
+		add_byte_int(*(s++), bin, binl, cur);
+	}
+	*buf = s;
+}
+
+int		add_string(char *buf[], char *bin[], int *binl, int *cur)
+{
+	char	*s = *buf;
+
+	while (*s && *s != '"')
+	{
+		add_character(&s, bin, binl, cur);
+	}
+	if (*s != '"')
+		return (-1);
+	*buf = s + 1;
+	return (0);
 }
 
 void	write_loop_content(char *bin[], int *binl, int *cur,
@@ -124,11 +140,24 @@ int		get_loops(char *buf[], char *bin[], int *binl, int *cur)
 		{
 			ptr = add_byte(ptr, &loop, &loopl, &loopcur);
 		}
+		else if (*ptr == '"')
+		{
+			ptr++;
+			if (add_string(&ptr, &loop, &loopl, &loopcur) == -1)
+				break ;
+		}
+		else if (*ptr == '\'')
+		{
+			ptr++;
+			add_character(&ptr, &loop, &loopl, &loopcur);
+			if (*ptr != '\'')
+				break ;
+			ptr++;
+		}
 		else if (*ptr == '(')
 		{
 			if (get_loops(&ptr, &loop, &loopl, &loopcur) == -1)
 				goto ret_ff;
-			//ptr++;
 		}
 		else if (*ptr == ')' && ptr[1] == '.')
 		{
@@ -172,7 +201,21 @@ int		print_binary_line(char *buf)
 			buf++;
 		if (*buf == '#' || *buf == '\0') break ;
 
-		if (*buf == '(')
+		if (*buf == '"')
+		{
+			buf++;
+			if (add_string(&buf, &bin, &binl, &cur) == -1)
+				break ;
+		}
+		else if (*buf == '\'')
+		{
+			buf++;
+			add_character(&buf, &bin, &binl, &cur);
+			if (*buf != '\'')
+				break ;
+			buf++;
+		}
+		else if (*buf == '(')
 		{
 			if (get_loops(&buf, &bin, &binl, &cur) == -1)
 				break ;

@@ -7,7 +7,7 @@ syntax:
 	write each byte in hexadecimal: 00 0f ff f1 ...
 	comments start with '#' and end at the end of line.
 	simple loops are enable: (00 00).3 = 00 00 00 00 00 00
-							 (00 (01 02).2 ).3 = 00 01 02 01 02 00 01 02 01 02 00 01 02 01 02
+	                         (00 (01 02).2 ).3 = 00 01 02 01 02 00 01 02 01 02 00 01 02 01 02
 
 programme usage:
 	./binw [file]?

@@ -1,16 +1,21 @@
 
 #include "binw.h"
 
+void	realloc_buffer(char *bin[], int *binl)
+{
+	*binl += 128;
+	if ((*bin = realloc(*bin, *binl)) == NULL)
+	{
+		fprintf(stderr, "memory allocation error\n");
+		exit (1);
+	}
+}
+
 void	add_byte_int(int byte, char *bin[], int *binl, int *cur)
 {
 	if (*cur == *binl - 1)
 	{
-		*binl += 128;
-		if ((*bin = realloc(*bin, *binl)) == NULL)
-		{
-			fprintf(stderr, "memory allocation error\n");
-			exit (1);
-		}
+		realloc_buffer(bin, binl);
 	}
 	(*bin)[(*cur)++] = byte;
 }
@@ -19,29 +24,43 @@ char	*add_byte_octal(char buf[], char *bin[], int *binl, int *cur)
 {
 	if (*cur == *binl - 1)
 	{
-		*binl += 128;
-		if ((*bin = realloc(*bin, *binl)) == NULL)
-		{
-			fprintf(stderr, "memory allocation error\n");
-			exit (1);
-		}
+		realloc_buffer(bin, binl);
 	}
-	(*bin)[(*cur)++] = (char)atoi_octal(buf);
+	(*bin)[(*cur)++] = atoi_octal(buf);
 	while (isoctal(*buf))
 		buf++;
 	return (buf);
 }
 
-char	*add_byte(char buf[], char *bin[], int *binl, int *cur)
+char	*add_byte_decimal(char buf[], char *bin[], int *binl, int *cur)
 {
 	if (*cur == *binl - 1)
 	{
-		*binl += 128;
-		if ((*bin = realloc(*bin, *binl)) == NULL)
-		{
-			fprintf(stderr, "memory allocation error\n");
-			exit (1);
-		}
+		realloc_buffer(bin, binl);
+	}
+	(*bin)[(*cur)++] = atoi(buf);
+	while (isdigit(*buf))
+		buf++;
+	return (buf);
+}
+
+char	*add_byte_binary(char buf[], char *bin[], int *binl, int *cur)
+{
+	if (*cur == *binl - 1)
+	{
+		realloc_buffer(bin, binl);
+	}
+	(*bin)[(*cur)++] = atoi_binary(buf);
+	while (isbin(*buf))
+		buf++;
+	return (buf);
+}
+
+char	*add_byte_hexa(char buf[], char *bin[], int *binl, int *cur)
+{
+	if (*cur == *binl - 1)
+	{
+		realloc_buffer(bin, binl);
 	}
 	(*bin)[(*cur)++] = (char)atoi_hexa(buf);
 	while (ishexa(*buf, HEXA_CHAR))
@@ -73,7 +92,7 @@ void	add_character(char *buf[], char *bin[], int *binl, int *cur)
 		else if (*s == 'x' && ishexa(s[1], HEXA_CHAR))
 		{
 			s++;
-			s = add_byte(s, bin, binl, cur);
+			s = add_byte_hexa(s, bin, binl, cur);
 		}
 		else
 		{
@@ -136,9 +155,30 @@ int		get_loops(char *buf[], char *bin[], int *binl, int *cur)
 			ptr++;
 
 		if (ishexa(ptr[0], HEXA_CHAR) && ishexa(ptr[1], HEXA_CHAR)
-				&& !ishexa(ptr[2], HEXA_CHAR))
+				&& !ishexa(ptr[2], HEXA_CHAR) && ptr[2] != 'd' && ptr[2] != 'b')
 		{
-			ptr = add_byte(ptr, &loop, &loopl, &loopcur);
+			ptr = add_byte_hexa(ptr, &loop, &loopl, &loopcur);
+		}
+		else if (isdigit(*ptr))
+		{
+			char *tmp = ptr;
+			for (; isbin(*tmp); tmp++);
+			if (*tmp == 'b')
+				add_byte_binary(ptr, &loop, &loopl, &loopcur);
+			else
+			{
+				for (; isoctal(*tmp); tmp++);
+				if (*tmp == 'o')
+					add_byte_octal(ptr, &loop, &loopl, &loopcur);
+				else
+				{
+					for (; isdigit(*tmp); tmp++);
+					if (*tmp != 'd')
+						break ;
+					add_byte_decimal(ptr, &loop, &loopl, &loopcur);
+				}
+			}
+			ptr = tmp + 1;
 		}
 		else if (*ptr == '"')
 		{
@@ -223,7 +263,28 @@ int		print_binary_line(char *buf)
 		else if (ishexa(buf[0], HEXA_CHAR) && ishexa(buf[1], HEXA_CHAR)
 				&& !ishexa(buf[2], HEXA_CHAR))
 		{
-			buf = add_byte(buf, &bin, &binl, &cur);
+			buf = add_byte_hexa(buf, &bin, &binl, &cur);
+		}
+		else if (isdigit(*buf))
+		{
+			char *tmp = buf;
+			for (; isbin(*tmp); tmp++);
+			if (*tmp == 'b')
+				add_byte_binary(buf, &bin, &binl, &cur);
+			else
+			{
+				for (; isoctal(*tmp); tmp++);
+				if (*tmp == 'o')
+					add_byte_octal(buf, &bin, &binl, &cur);
+				else
+				{
+					for (; isdigit(*tmp); tmp++);
+					if (*tmp != 'd')
+						break ;
+					add_byte_decimal(buf, &bin, &binl, &cur);
+				}
+			}
+			buf = tmp + 1;
 		}
 		else
 		{

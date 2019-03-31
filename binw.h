@@ -22,4 +22,7 @@ extern int				ishexa(int c, int maj);
 extern int				isoctal(int c);
 extern unsigned int		atoi_octal(const char *s);
 
+extern int				isbin(int c);
+extern unsigned int		atoi_binary(const char *s);
+
 #endif

@@ -41,12 +41,9 @@ static inline unsigned int		strtoi(const char *s)
 {
 	unsigned int	n;
 
-	n = 0;
-	while (1)
+	n = get_base_value(*(s++));
+	while (ishexa(*s, HEXA_CHAR))
 	{
-		if (*s > 'f' || (*s > 'F' && *s < 'a')
-				|| (*s > '9' && *s < 'A') || *s < '0')
-			break ;
 		n *= 16;
 		n += get_base_value(*(s++));
 	}

@@ -155,7 +155,7 @@ int		get_loops(char *buf[], char *bin[], int *binl, int *cur)
 			ptr++;
 
 		if (ishexa(ptr[0], HEXA_CHAR) && ishexa(ptr[1], HEXA_CHAR)
-				&& !ishexa(ptr[2], HEXA_CHAR) && ptr[2] != 'd' && ptr[2] != 'b')
+				&& !ishexa(ptr[2], HEXA_CHAR) && ptr[2] != 'o')
 		{
 			ptr = add_byte_hexa(ptr, &loop, &loopl, &loopcur);
 		}
@@ -261,7 +261,7 @@ int		print_binary_line(char *buf)
 				break ;
 		}
 		else if (ishexa(buf[0], HEXA_CHAR) && ishexa(buf[1], HEXA_CHAR)
-				&& !ishexa(buf[2], HEXA_CHAR))
+				&& !ishexa(buf[2], HEXA_CHAR) && buf[2] != 'o')
 		{
 			buf = add_byte_hexa(buf, &bin, &binl, &cur);
 		}

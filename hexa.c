@@ -13,7 +13,7 @@ extern int		ishexa(int c, int maj)
 
 static inline const char		*left_trim(const char *s)
 {
-	while (*s == ' ' || *s == '\n')
+	while (*s == ' ' || *s == '\t' || *s == '\n')
 		s++;
 	if (*s == '0')
 	{

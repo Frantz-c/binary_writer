@@ -8,7 +8,7 @@ extern int		isoctal(int c)
 
 static inline const char	*left_trim(const char *s)
 {
-	while (*s == ' ' || *s == '\t')
+	while (*s == ' ' || *s == '\t' || *s == '\n')
 		s++;
 	if (*s == '0')
 	{

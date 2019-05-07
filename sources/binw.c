@@ -80,10 +80,20 @@ void	add_character(char *buf[], char *bin[], int *binl, int *cur)
 			s++;
 			add_byte_int(012, bin, binl, cur);
 		}
+		else if (*s == 'r')
+		{
+			s++;
+			add_byte_int(0xd, bin, binl, cur);
+		}
 		else if (*s == 't')
 		{
 			s++;
 			add_byte_int(0x9, bin, binl, cur);
+		}
+		else if (*s == 'v')
+		{
+			s++;
+			add_byte_int(0xb, bin, binl, cur);
 		}
 		else if (isoctal(*s))
 		{

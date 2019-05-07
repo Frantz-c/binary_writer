@@ -1,11 +1,13 @@
-OBJ  = binw.o octal.o hexa.o binary.o
-NAME = binw
+OBJ    = objects/binw.o objects/octal.o objects/hexa.o objects/binary.o
+NAME   = binw
+CFLAGS = -O3 -Wall -Wextra -I includes
+CC     = gcc
 
 all: $(OBJ)
-	gcc -O3 -Wall -Wextra $^ -o $(NAME)
+	$(CC) $(CFLAGS) $^ -o $(NAME)
 
-%.o: %.c
-	gcc -O3 -Wall -Wextra -c $<
+objects/%.o: sources/%.c includes/binw.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean:
 	/bin/rm -f $(OBJ)

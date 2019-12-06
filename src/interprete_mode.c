@@ -1,0 +1,161 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <ctype.h>
+#include <fcntl.h>
+
+#define ALL_BASES	0x0u
+#define HEXA_BASE	0x1u
+#define OCTAL_BASE	0x2u
+#define BINARY_BASE	0x3u
+
+typedef struct	s_file
+{
+	uint8_t		*str;
+	uint32_t	len;
+	uint32_t	i;
+	uint32_t	line;
+	uint32_t	base;
+	const char	*name;
+}
+t_file;
+
+int		interprete_file(const char *filename)
+{
+	int			fd;
+	t_file		in = {NULL,0,0,1,ALL_BASES,filename};
+	t_file		out = {NULL,0,0,0,0,NULL};
+	uint32_t	error = 0;
+
+	if ((fd = open(filename, O_RDONLY)) == -1)
+		goto __open_error;
+	
+
+	if ((in.len = lseek(fd, 0, SEEK_END)) == (off_t)-1)
+		goto __lseek_error;
+	if (in.len == 0)
+		goto __empty_file;
+	lseek(fd, 0, SEEK_SET);
+
+
+	if ((in.str = malloc(in.len)) == NULL)
+		goto __no_memory;
+
+
+	if (read(fd, in.str, in.len) != in.len)
+		goto __read_error;
+	close(fd);
+
+	while (in.i < in.len)
+	{
+		// skip spaces
+		while (1)
+		{
+			if (in.str[in.i] == '\n')
+				in.line++;
+			else if (in.str[in.i] != ' ' && in.str[in.i] != '\t')
+				break;
+				in.i++;
+			if (in.i == i.len)
+				goto __end_loops;
+		}
+
+		if (in.str[in.i] == ';' || in.str[in.i] == '#')
+			skip_comment(&in);
+		// check directives (%define and %macro)
+		else if (in.str[in.i] == '%')
+		{
+			error += get_directive(&in, &out);
+
+			in.i++;
+			if (in.len - in.i > 6 && memcmp(in.str + in.i, "include") == 0)
+				error += include_file(&in, &out);
+			else if (in.len - in.i > 4 && memcmp(in.str + in.i, "macro") == 0)
+				error += get_macro(&in, &out);
+			else
+			{
+				dprintf(STDERR_FILENO,
+						"in file %s:%u unknown instruction\n",
+						in.name, in.line);
+				error++;
+			}
+		}
+		else if (in.str[in.i] == '(')
+			error += get_loop(&in, &out);
+		else if (in.str[in.i] == '[')
+			error += get_auto_padding_block(&in, &out);
+		else if (in.str[in.i] == '<')
+			error += set_base(&in, &out, &base);
+		else if (in.str[i] == '"')
+			error += get_string(&in, &out);
+		else if (in.str[i] == '\'')
+			error += get_character(&in, &out);
+		else if (base == ALL_BASES)
+		{
+			if (in.str[in.i] == 'x' || in.str[in.i] == 'h'
+					|| (in.str[in.i] == '0' && (in.len - in.i) > 1
+					&& in.str[in.i + 1] == 'x'))
+				error += get_hexadecimal(&in, &out);
+			else if (in.str[in.i] == '0' || in.str[in.i] == 'o')
+				error += get_octal(&in, &out);
+			else if (in.str[in.i] == 'b')
+				error += get_binary(&in, &out);
+			else if (isdigit(in.str[in.i]))
+				error += get_decimal(&in, &out);
+			else
+				goto __unexpected_char;
+		}
+		else if (in.base == HEXA_BASE &&
+				(isdigit(in.str[in.i])
+				|| (in.str[in.i] >= 'a' && in.str[in.i] <= 'f')
+				|| (in.str[in.i] >= 'A' && in.str[in.i] <= 'F'))
+			error += get_hexa_locked(&in, &out);
+		else if (in.base == OCTAL_BASE &&
+				in.str[in.i] >= '0' && in.str[in.i] <= '8')
+			error += get_octal_locked(&in, &out);
+		else if (in.base == BINARY_BASE &&
+				(in.str[in.i] == '0' || in.str[in.i] == '1'))
+			error += get_binary_locked(&in, &out);
+		else
+		{
+			__unexpected_char:
+			dprintf(STDERR_FILENO, "unexpected char '%c' line %u\n",
+					in.str[in.i], in.line);
+			skip_word(&in);
+			error++;
+		}
+	}
+
+	__end_loops:
+	if (output == NULL)
+	{
+		dprintf(STDERR_FILENO, "empty file or not a valid bwl file\n");
+		free(content);
+		return (1);
+	}
+	write(STDOUT_FILENO, output, outlen);
+	free(output);
+	free(content);
+
+	return (0);
+
+// errors
+	__no_memory:
+	dprintf(STDERR_FILENO, "no more memory enable\n");
+	goto __ret_error;
+	__empty_file:
+	dprintf(STDERR_FILENO, "file \"%s\" is empty\n", filename);
+	goto __ret_error;
+	__read_error:
+	dprintf(STDERR_FILENO, "can't read the entire file \"%s\"\n",
+			filename);
+	__ret_error:
+	close(fd);
+	return (1);
+
+	__open_error:
+	dprintf(STDERR_FILENO, "can't open file \"%s\"\n", filename);
+	return (1);
+}

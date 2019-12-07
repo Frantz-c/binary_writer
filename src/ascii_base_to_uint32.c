@@ -1,38 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <ctype.h>
-#include <fcntl.h>
-
-// coder skip_word()
-
-#define is_binary_char(c)\
-	(c == '1' || c == '0')
-
-#define not_binary_char(c)\
-	(c != '1' && c != '0')
-
-#define is_octal_char(c)\
-	(c >= '0' && c <= '7')
-
-#define not_octal_char(c)\
-	(c < '0' || c > '7')
-
-#define is_decimal_char(c)\
-	(c >= '0' && c <= '9')
-
-#define not_decimal_char(c)\
-	(c < '0' || c > '9')
-
-#define is_hex_char(c)\
-	((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')\
-	|| (c >= '0' && c <= '9'))
-
-#define	not_hex_char(c)\
-	(c > 'f' || (c < 'a' && c > 'F')\
-	|| (c < 'A' && c > '9') || c < '0')
+#include "interprete_file.h"
 
 static uint8_t	get_hex_digit(uint8_t c)
 {
@@ -43,10 +9,10 @@ static uint8_t	get_hex_digit(uint8_t c)
 	return (c - '0');
 }
 
-int				hexa_ascii_to_uint(t_file *in, uint32_t *n)
+uint8_t			hexa_ascii_to_uint(t_in *in, uint32_t *n)
 {
 	in->i++;
-	if (length_is_0(in))
+	if (len_is_0(in))
 	{
 		in->i--;
 		return (err_unexpected_char(in));
@@ -58,7 +24,7 @@ int				hexa_ascii_to_uint(t_file *in, uint32_t *n)
 
 	while (1)
 	{
-		if (length_is_0(in) || not_hex_char(in->str[in->i]))
+		if (len_is_0(in) || not_hex_char(in->str[in->i]))
 			return (0);
 
 		*n = (*n << 4) | get_hex_digit(in->str[in->i++]);
@@ -68,10 +34,10 @@ int				hexa_ascii_to_uint(t_file *in, uint32_t *n)
 	return (0);
 }
 
-int		octal_ascii_to_uint(t_file *in, uint32_t *n)
+uint8_t		octal_ascii_to_uint(t_in *in, uint32_t *n)
 {
 	in->i++;
-	if (length_is_0(in))
+	if (len_is_0(in))
 	{
 		in->i--;
 		return (err_unexpected_char(in));
@@ -97,10 +63,10 @@ int		octal_ascii_to_uint(t_file *in, uint32_t *n)
 	return (0);
 }
 
-int		binary_ascii_to_uint(t_file *in, uint32_t *n)
+uint8_t		binary_ascii_to_uint(t_in *in, uint32_t *n)
 {
 	in->i++;
-	if (length_is_0(in))
+	if (len_is_0(in))
 	{
 		in->i--;
 		return (err_unexpected_char(in));
@@ -130,10 +96,10 @@ int		binary_ascii_to_uint(t_file *in, uint32_t *n)
 	return (0);
 }
 
-int		decimal_ascii_to_uint(t_file *in, uint32_t *n)
+uint8_t		decimal_ascii_to_uint(t_in *in, uint32_t *n)
 {
 	in->i++;
-	if (length_is_0(in))
+	if (len_is_0(in))
 	{
 		in->i--;
 		return (err_unexpected_char(in));

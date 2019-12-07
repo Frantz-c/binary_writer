@@ -5,13 +5,20 @@
 #include <stdint.h>
 #include <ctype.h>
 
+int		interprete_file(const char *filename);
+
+#define INPUT_MODE		1
+#define CONVERT_MODE	2
+#define HELP_MODE		3
+#define INTERPRETE_MODE	4
+
 void	print_help(const char *const prog)
 {
 	printf("%s [file.bwl]        -> generate binary using BWL file\n"
-			"%s	--convert [file]  -> convert binary to BWL\n"
+			"%s --convert [file]  -> convert binary to BWL\n"
 			"%s                   -> direct input mode\n"
-			"%s	-h                -> display help\n"
-			"%s	--bwl             -> display bwl syntax help\n",
+			"%s -h                -> display help\n"
+			"%s --bwl             -> display bwl syntax help\n",
 			prog, prog, prog, prog, prog
 	);
 }
@@ -56,13 +63,13 @@ int		main(int argc, char *argv[])
 	switch (mode)
 	{
 		case HELP_MODE:
-			print_help(*av);
+			print_help(*argv);
 			return (0);
 		case INTERPRETE_MODE:
 			return (interprete_file(in));
 		case CONVERT_MODE:
-			return (convert_file(in));
+			return (2);//convert_file(in));
 		case INPUT_MODE:
-			return (direct_input());
+			return (3);//direct_input());
 	}
 }

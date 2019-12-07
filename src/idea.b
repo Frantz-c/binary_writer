@@ -15,9 +15,9 @@
 1) basic input
 
 	hexa:	xFF, hFF, 0xFF
-	deci:	255
+	deci:	255, +255
 	octal:	0377, o377
-	bin:	b11111111, b1111_1111	// '_' is ignored
+	bin:	$1111_1111, $101011		// '_' is ignored
 	string:	"string"				// utf-8
 	char:	'c'
 
@@ -27,16 +27,15 @@
 2) lock base
 
 	<BASE>
-	BASE = 0x, x, h, 0, o, b, *
-	* = all bases
-	(strings and characters or arguments are not affected)
+	BASE = 'hexa', 'bin' or 'binary', 'oct' or 'octal', '*' or 'all'
+	(strings, characters and arguments are not affected)
 
 	example:
-			<0x> 00 02 1A <*> 255 0xAC b111
-			<b> 10000 11__1111_1111 <0> 77 122 <*>
+			<hexa> 00 02 1A <*> 255 0xAC b111
+			<bin> 10000 1111_1111 <octal> 77 122 <all>
 	result:
 			x00 x02 x1A 255 xAC b111
-			b10000 b11_11111111 077 0122
+			b10000 b11111111 077 0122
 
 3) loop
 

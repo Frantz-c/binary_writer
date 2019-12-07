@@ -1,17 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdint.h>
-#include <ctype.h>
-#include <fcntl.h>
+#include "interprete_file.h"
 
-int		get_number(t_file *in, uint32_t *n)
+uint8_t	get_number(t_in *in, uint32_t *n)
 {
 	switch (in->str[in->i])
 	{
 		case 'x':
 		case 'h': return (hexa_ascii_to_uint(in, n));
+		case 'o':
 		case '0': return (octal_ascii_to_uint(in, n));
 		case '1':
 		case '2':
@@ -22,16 +17,12 @@ int		get_number(t_file *in, uint32_t *n)
 		case '7':
 		case '8':
 		case '9': return (decimal_ascii_to_uint(in, n));
+		case '$':
 		case 'b': return (binary_ascii_to_uint(in, n));
 		default:
-			dprintf
-			(
-				STDERR_FILENO,
-				"file %s:l%u:\tunexpected char '%c'\n",
-				in->name, in->line, in->str[in->i]
-			);
+			err_unexpected_char(in);
 			skip_word(in);
-		return (-1);
+		return (1);
 	}
 	return (0);
 }

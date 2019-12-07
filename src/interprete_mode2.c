@@ -6,10 +6,43 @@
 #include <ctype.h>
 #include <fcntl.h>
 
+#define length_ok(file,n)		((file->len - file->i) >= n)
+#define length_not_ok(file,n)	((file->len - file->i) < n)
+#define len_is_0(file)			(file->i >= file->len)
+#define len_is_not_0(file)		(file->i < file->len)
+
 #define ALL_BASES	0x0u
 #define HEXA_BASE	0x1u
 #define OCTAL_BASE	0x2u
 #define BINARY_BASE	0x3u
+
+#define LOOP		0x1u
+#define DEFAULT		0x0u
+
+typedef struct	s_fin
+{
+	uint8_t		*str;
+	uint32_t	len;
+	uint32_t	i;
+	uint32_t	line;
+	uint32_t	base;
+	const char	*name;
+}
+t_fin;
+
+typedef struct	s_fout
+{
+	uint8_t		*str;
+	uint32_t	len;
+	uint32_t	i;
+	const char	*name;
+	uint8_t		*buf;
+	uint32_t	buflen;
+	uint32_t	j;
+	uint8_t		status;	// LOOP or DEFAULT
+	uint8_t		parent_lvl;
+}
+t_fout;
 
 typedef struct	s_file
 {
@@ -19,6 +52,11 @@ typedef struct	s_file
 	uint32_t	line;
 	uint32_t	base;
 	const char	*name;
+	uint8_t		*buf;
+	uint32_t	buflen;
+	uint32_t	j;
+	uint8_t		status;	// LOOP or DEFAULT
+	uint8_t		parent_lvl;
 }
 t_file;
 
@@ -100,8 +138,8 @@ int		get_file_content(t_file *in, const char *filename)
 
 int		interprete_file(const char *filename)
 {
-	t_file		in = {NULL,0,0,1,ALL_BASES,filename};
-	t_file		out = {NULL,0,0,0,0,NULL};
+	t_file		in = {NULL,0,0,1,ALL_BASES,filename,NULL,0,0,0,0};
+	t_file		out = {NULL,0,0,0,0,NULL,NULL,0,0,0,0};
 	uint32_t	error = 0;
 
 	if (get_file_content(&in, filename) != 0)
@@ -121,14 +159,8 @@ int		interprete_file(const char *filename)
 				goto __end_loops;
 		}
 
-		if (in.str[in.i] > 0x80 || router[in.str[in.i]] == NULL)
-		{
-			dprintf(
-				STDERR_FILENO,
-				"file %s:l%u:\tunexpected character '%c'\n",
-				in.name, in.line, in.str[in.i]
-			);
-		}
+		if (router[in.str[in.i]] == NULL)
+			error += err_unexpected_char(in);
 		else
 			error += router[in.str[in.i]](&in, &out);
 	}

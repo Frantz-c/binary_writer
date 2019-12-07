@@ -29,7 +29,7 @@
 	<BASE>
 	BASE = 0x, x, h, 0, o, b, *
 	* = all bases
-	(strings and characters are not affected)
+	(strings and characters or arguments are not affected)
 
 	example:
 			<0x> 00 02 1A <*> 255 0xAC b111

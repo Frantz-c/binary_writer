@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 uint32_t	get_directive(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 {

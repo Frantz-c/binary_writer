@@ -22,7 +22,7 @@ typedef struct	s_file
 }
 t_file;
 
-int		interprete_file(const char *filename)
+int		interpret_file(const char *filename)
 {
 	int			fd;
 	t_file		in = {NULL,0,0,1,ALL_BASES,filename};

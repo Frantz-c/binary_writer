@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 uint8_t	get_func_index[TOTAL_BASES][0x100] =
 {

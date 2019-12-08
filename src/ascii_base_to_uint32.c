@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 static uint8_t	get_hex_digit(uint8_t c)
 {
@@ -11,7 +11,6 @@ static uint8_t	get_hex_digit(uint8_t c)
 
 uint8_t			hexa_ascii_to_uint(t_in *in, uint32_t *n)
 {
-	in->i++;
 	if (len_is_0(in))
 	{
 		in->i--;
@@ -36,7 +35,6 @@ uint8_t			hexa_ascii_to_uint(t_in *in, uint32_t *n)
 
 uint8_t		octal_ascii_to_uint(t_in *in, uint32_t *n)
 {
-	in->i++;
 	if (len_is_0(in))
 	{
 		in->i--;
@@ -65,7 +63,6 @@ uint8_t		octal_ascii_to_uint(t_in *in, uint32_t *n)
 
 uint8_t		binary_ascii_to_uint(t_in *in, uint32_t *n)
 {
-	in->i++;
 	if (len_is_0(in))
 	{
 		in->i--;
@@ -98,7 +95,6 @@ uint8_t		binary_ascii_to_uint(t_in *in, uint32_t *n)
 
 uint8_t		decimal_ascii_to_uint(t_in *in, uint32_t *n)
 {
-	in->i++;
 	if (len_is_0(in))
 	{
 		in->i--;

@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 static int	get_file_content(t_in *in, const char *filename)
 {
@@ -30,7 +30,7 @@ static int	get_file_content(t_in *in, const char *filename)
 	return (0);
 }
 
-int		interprete_file(const char *filename)
+int		interpret_file(const char *filename)
 {
 	t_in		in = {NULL};
 	t_out		out = {NULL};
@@ -66,13 +66,11 @@ int		interprete_file(const char *filename)
 			uint8_t	index = get_func_index[data.base][chr];
 
 			if (index == 0xffu)
-			{
 				error += err_unexpected_char(&in);
-				in.i++;
-			}
 			else
 				call[index](&in, &out, &data, &buf);
 		}
+		in.i++;
 	}
 
 	__end_loops:
@@ -82,7 +80,8 @@ int		interprete_file(const char *filename)
 		free(in.str);
 		return (1);
 	}
-	write(STDOUT_FILENO, out.str, out.i);
+	if (!error)
+		write(STDOUT_FILENO, out.str, out.i);
 	free(out.str);
 	free(in.str);
 

@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 // loop syntax: "().n"
 static uint8_t		get_laps(t_in *in, uint32_t	*nlaps)
@@ -31,23 +31,27 @@ static uint8_t		get_laps(t_in *in, uint32_t	*nlaps)
 	return (0);
 }
 
-static void		copy_unrolled_loop(t_out *out, t_ustr *buf, uint32_t lvl, uint32_t nlaps, t_data *data)
+static void		copy_unrolled_loop(t_out *out, t_ustr *buf, t_data *data)
 {
+	register const uint32_t	nlaps = data->param1;
+
 	if (buf->str == NULL)
 		return;
 
-	if (lvl > 1 || data->autopad)
+	if (data->loop_lvl > 1 || data->autopad)
 	{
 		if (buf->len < (buf->i * nlaps))
 		{
 			buf->str = realloc(buf->str, buf->i * nlaps);
 			buf->len = buf->i * nlaps;
 		}
-		for (uint32_t a = 0, b = buf->i; a < nlaps; a++, b += buf->i)
-			memcpy(buf->str + b, buf->str, buf->len);
+		for (uint32_t a = 1, b = buf->i; a < nlaps; a++, b += buf->i)
+		{
+			memmove(buf->str + b, buf->str, buf->i);
+		}
 		buf->i *= nlaps;
 	}
-	else // if loop isn't called by autopad and lvl == 1
+	else // if loop isn't called by autopad and loop_lvl == 1
 	{
 		if ((out->len - out->i) < (buf->i * nlaps))
 		{
@@ -63,16 +67,18 @@ static void		copy_unrolled_loop(t_out *out, t_ustr *buf, uint32_t lvl, uint32_t 
 	}
 }
 
+// create a static struct
 uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 {
-	static uint32_t		loop_lvl = 0;
 	const uint32_t		start_line = in->line;
 	uint32_t			error = 0;
 
 	// skip '('
 	in->i++;
 
-	loop_lvl++;
+	data->loop_lvl++;
+//	dprintf(2, "loop_%u.content = [ %c ]\n",
+//			data->loop_lvl, in->str[in->i]);
 
 	// read the loop content
 	while (in->i < in->len)
@@ -86,19 +92,22 @@ uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 				break;
 			in->i++;
 			if (in->i == in->len)
+			{
+				data->loop_lvl--;
 				return (error + err_missing_parent_end(in, start_line));
+			}
 		}
 
 		if (in->str[in->i] == ')')
 		{
-			uint32_t	nlaps;
-
-			error += get_laps(in, &nlaps);
+			error += get_laps(in, &data->param1);
 			if (!error)
-				copy_unrolled_loop(out, buf, loop_lvl, nlaps, data);
+				copy_unrolled_loop(out, buf, data);
 			else
 				buf->i = 0;
-			loop_lvl--;
+			data->loop_lvl--;
+//			dprintf(2, "(2) loop_%u.content = [ %.*s ]\n",
+//				data->loop_lvl, (int)(in->len - in->i), in->str + in->i);
 			return (error);
 		}
 		else
@@ -110,11 +119,13 @@ uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 			{
 				error += err_unexpected_char(in);
 				skip_until_match(in, ')');
+				data->loop_lvl--;
 				return (error + 1);
 			}
 			else
 				error += call[index](in, out, data, buf);
 		}
+		in->i++;
 	}
 
 	__error_loop:
@@ -122,6 +133,6 @@ uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 			"file %s:l%u:\terror syntax in loop\n",
 			in->name, in->line
 	);
-	loop_lvl--;
+	data->loop_lvl--;
 	return (error + 1);
 }

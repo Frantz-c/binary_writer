@@ -1,4 +1,4 @@
-#include "interprete_file.h"
+#include "interpret_file.h"
 
 uint8_t		err_loop_argument(t_in *in)
 {

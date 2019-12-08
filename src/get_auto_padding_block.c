@@ -1,15 +1,13 @@
-#include "interprete_file.h"
-
-#define PAD_BEG	1
-#define PAD_END	2
-#define PAD_MID	4
+#include "interpret_file.h"
 
 /*
 *	parse auto-padding block arguments:
 *		".n,p"	or	".n,*=p"
 */
-static uint8_t get_autopad_info(t_in *in, uint8_t *pad, uint32_t *size)
+static uint8_t get_autopad_info(t_in *in, t_data *data)
 {
+	uint32_t	pad_chr;
+
 	in->i++;
 	if (len_is_0(in))
 		return (err_expected_char_at_end(in));
@@ -21,7 +19,7 @@ static uint8_t get_autopad_info(t_in *in, uint8_t *pad, uint32_t *size)
 	if (len_is_0(in))
 		return (err_expected_char_at_end(in));
 
-	if (get_number(in, size) == 1)
+	if (get_number(in, &data->param1) == 1)
 		return (1);
 	if (len_is_0(in))
 		return (err_expected_char_at_end(in));
@@ -41,62 +39,63 @@ static uint8_t get_autopad_info(t_in *in, uint8_t *pad, uint32_t *size)
 			return (err_unexpected_char(in));
 		in->i++;
 	}
-	*pad = in->str[in->i];
+	if (get_number(in, &pad_chr) == 1)
+		return (1);
+	data->param2 = (uint8_t)pad_chr;
 	return (0);
 }
 
-static uint8_t	write_autopad_block(t_in *in, t_out *out, t_ustr *buf,
-							uint8_t pad_pos, uint8_t pad_chr,
-							uint32_t block_size, uint32_t prefix_size)
+static uint8_t	write_autopad_block(t_in *in, t_out *out,
+									t_data *data, t_ustr *buf)
 {
 	uint32_t pad_size;
+	// data->param2 is padding_character
+	// data->param1 is blocksize
 
-	if (pad_pos == PAD_END && buf->i)
+	if (data->pad_pos == PAD_END && buf->i)
 	{
-		pad_size = (block_size - (prefix_size + buf->i));
-		if (pad_size & 0x80000000)
+		pad_size = (data->param1 - (data->pre_size + buf->i));
+		if (pad_size & 0x80000000u)
 			return (err_autopad_too_big_content(in));
 		if (length_not_ok(out, buf->i + pad_size))
 		{
 			out->str = realloc(out->str, out->len + buf->i + pad_size);
 			out->len += buf->i + pad_size;
 		}
-		memset(out->str + out->i, pad_chr, pad_size);
+		memset(out->str + out->i, data->param2, pad_size);
 		out->i += pad_size;
 		memcpy(out->str + out->i, buf->str, buf->i);
 		out->i += buf->i;
-		return (0);
 	}
-	else if (pad_pos == PAD_BEG)
+	else if (data->pad_pos == PAD_BEG)
 	{
-		pad_size = (block_size - buf->i);
-		if (pad_size & 0x80000000)
+		pad_size = (data->param1 - buf->i);
+		if (pad_size & 0x80000000u)
 			return (err_autopad_too_big_content(in));
-		if (length_not_ok(out, block_size))
+		if (length_not_ok(out, (pad_size + buf->i)))
 		{
-			out->str = realloc(out->str, block_size);
-			out->len += block_size;
+			out->str = realloc(out->str, out->len + (pad_size + buf->i));
+			out->len += (pad_size + buf->i);
 		}
-		memset(out->str + out->i, pad_chr, pad_size);
+		memset(out->str + out->i, data->param2, pad_size);
 		out->i += pad_size;
 		memcpy(out->str + out->i, buf->str, buf->i);
 		out->i += buf->i;
 	}
 	else
 	{
-		pad_size = (block_size - buf->i);
-		if (pad_size & 0x80000000)
+		pad_size = (data->param1 - data->pre_size);
+		if (pad_size & 0x80000000u)
 			return (err_autopad_too_big_content(in));
-		if (length_not_ok(out, block_size))
+		if (length_not_ok(out, pad_size))
 		{
-			out->str = realloc(out->str, block_size);
-			out->len += block_size;
+			out->str = realloc(out->str, out->len + pad_size);
+			out->len += pad_size;
 		}
-		memcpy(out->str + out->i, buf->str, buf->i);
-		out->i += buf->i;
-		memset(out->str + out->i, pad_chr, pad_size);
+		memset(out->str + out->i, data->param2, pad_size);
 		out->i += pad_size;
 	}
+	buf->i = 0;
 	return (0);
 }
 
@@ -104,13 +103,18 @@ uint32_t	get_autopad(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 {
 	const uint32_t	start_line	= in->line;
 	uint8_t			error		= 0;
-	uint8_t			pad_pos		= 0;
-	uint32_t		prefix_size	= 0;
+
+	data->autopad++;
+	data->pre_size = 0;
+	data->pad_pos = 0;
+	data->param1 = 0;
+	data->param2 = 0;
 
 	in->i++;
 	if (len_is_0(in))
 	{
 		in->i--;
+		data->autopad--;
 		return (err_unexpected_char(in));
 	}
 
@@ -125,29 +129,34 @@ uint32_t	get_autopad(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 				break;
 			in->i++;
 			if (in->i == in->len)
+			{
+				data->autopad--;
 				return (error + err_missing_autopad_end(in, start_line));
+			}
 		}
 
 		if (in->str[in->i] == ']')
 		{
-			uint8_t		pad_chr;
-			uint32_t	size;
-			error += get_autopad_info(in, &pad_chr, &size);
+			error += get_autopad_info(in, data);
 			if (!error)
-				write_autopad_block(in, out, buf, pad_pos, pad_chr, size, prefix_size);
+				write_autopad_block(in, out, data, buf);
 			else
 				buf->i = 0;
+			data->autopad--;
 			return (error);
 		}
 		else if (in->str[in->i] == '*')
 		{
-			if (pad_pos)
+			if (data->pad_pos)
+			{
+				data->autopad--;
 				return (error + err_autopad_multi_stars(in));
+			}
 			if (buf->i == 0)
-				pad_pos = PAD_BEG;
+				data->pad_pos = PAD_BEG;
 			else
 			{
-				prefix_size = buf->i;
+				data->pre_size = buf->i;
 				if (length_not_ok(out, buf->i))
 				{
 					out->str = realloc(out->str, out->len + buf->i);
@@ -155,7 +164,8 @@ uint32_t	get_autopad(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 				}
 				memcpy(out->str + out->i, buf->str, buf->i);
 				out->i += buf->i;
-				pad_pos = PAD_END;
+				buf->i = 0;
+				data->pad_pos = PAD_END;
 			}
 		}
 		else
@@ -167,10 +177,18 @@ uint32_t	get_autopad(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 			{
 				error += err_unexpected_char(in);
 				skip_until_match(in, ']');
+				data->autopad--;
 				return (error);
 			}
 			error += call[index](in, out, data, buf);
 		}
+		in->i++;
+		if (len_is_0(in))
+		{
+			data->autopad--;
+			return (error + err_autopad_multi_stars(in));
+		}
 	}
+	data->autopad--;
 	return (error);
 }

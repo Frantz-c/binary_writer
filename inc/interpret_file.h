@@ -59,6 +59,9 @@
 # define BINARY_BASE	0x3u
 # define TOTAL_BASES	0x4u
 
+# define PAD_BEG	1
+# define PAD_END	2
+
 typedef struct	s_in
 {
 	uint8_t		*str;
@@ -68,12 +71,31 @@ typedef struct	s_in
 	const char	*name;
 }
 t_in;
+/*
+typedef struct	s_loop
+{
+	uint32_t	nlaps;		// loop & autopad
+}
+t_loop;
 
+typedef struct	s_autopad
+{
+	uint8_t		pad_chr;	// autopad
+	uint32_t	block_size;	// autopad
+	uint32_t	pre_size;	// autopad
+	uint8_t		pad_pos;	// autopad
+}
+t_autopad;
+*/
 typedef struct	s_data
 {
-	uint8_t		base;
-	uint8_t		autopad;
-	uint8_t		loop_lvl;
+	uint8_t		base;		// all
+	uint8_t		autopad;	// autopad
+	uint8_t		loop_lvl;	// loop
+	uint8_t		param2;		// autopad
+	uint32_t	param1;		// loop & autopad
+	uint32_t	pre_size;	// autopad
+	uint8_t		pad_pos;	// autopad
 }
 t_data;
 
@@ -98,7 +120,9 @@ extern uint8_t	get_func_index[TOTAL_BASES][0x100];
 extern uint32_t	(*call[I_END])(t_in*,t_out*,t_data*,t_ustr*);
 
 // functions.c
-void		write_a_char(t_out *out, uint8_t chr);
+void		write_a_char(t_out *out, t_ustr *buf, uint8_t chr, t_data *data);
+uint8_t		write_escape_sequence(t_in *in, t_out *out,
+										t_ustr *buf, t_data *data);
 void		skip_word(t_in *in);
 void		skip_until_match(t_in *in, uint8_t chr);
 

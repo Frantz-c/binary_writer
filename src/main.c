@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
-int		interprete_file(const char *filename);
+int		interpret_file(const char *filename);
 
 #define INPUT_MODE		1
 #define CONVERT_MODE	2
@@ -66,7 +66,7 @@ int		main(int argc, char *argv[])
 			print_help(*argv);
 			return (0);
 		case INTERPRETE_MODE:
-			return (interprete_file(in));
+			return (interpret_file(in));
 		case CONVERT_MODE:
 			return (2);//convert_file(in));
 		case INPUT_MODE:

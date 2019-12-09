@@ -1,8 +1,4 @@
-#!/Users/frantz/projects/binary_writer/src/TEST
+#!/Users/fcordon/github/binary_writer/src/TEST
 
-[">}>} BINARY WRITTING LANGUAGE{<{<"*].40,58	'\n'
-["s ok" * "it'"].10,35
-["s ok" * "it'"].10,35
-["s ok" * "it'"].10,35
-["s ok" * "it'"].10,35							'\n'
-['|' ("~)><(~|").4 *].40,58						'\n'
+<hexa>
+((41).2(42).2).4

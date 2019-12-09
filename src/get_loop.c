@@ -19,19 +19,11 @@ static uint8_t		get_laps(t_in *in, uint32_t	*nlaps)
 
 	if (get_number(in, nlaps) == 1)
 		return (1);
-	if (len_is_not_0(in)
-			&& in->str[in->i] != ' '
-			&& in->str[in->i] != '\t'
-			&& in->str[in->i] != '\n'
-			&& in->str[in->i] != '\r')
-	{
-		return (err_unexpected_char(in));
-	}
 
 	return (0);
 }
 
-static void		copy_unrolled_loop(t_out *out, t_ustr *buf, t_data *data)
+static void		copy_unrolled_loop(t_out *out, t_ustr *buf, t_data *data, uint32_t buf_start)
 {
 	register const uint32_t	nlaps = data->param1;
 
@@ -40,28 +32,28 @@ static void		copy_unrolled_loop(t_out *out, t_ustr *buf, t_data *data)
 
 	if (data->loop_lvl > 1 || data->autopad)
 	{
-		if (buf->len < (buf->i * nlaps))
+		if (buf->len < buf_start + ((buf->i - buf_start) * nlaps))
 		{
-			buf->str = realloc(buf->str, buf->i * nlaps);
-			buf->len = buf->i * nlaps;
+			buf->str = realloc(buf->str, (buf_start + (buf->i - buf_start)) * nlaps);
+			buf->len = buf_start + ((buf->i - buf_start) * nlaps);
 		}
-		for (uint32_t a = 1, b = buf->i; a < nlaps; a++, b += buf->i)
+		for (uint32_t a = 1, b = (buf->i - buf_start); a < nlaps; a++, b += (buf->i - buf_start))
 		{
-			memmove(buf->str + b, buf->str, buf->i);
+			memmove(buf->str + buf_start + b, buf->str + buf_start, (buf->i - buf_start));
 		}
-		buf->i *= nlaps;
+		buf->i = buf_start + ((buf->i - buf_start) * nlaps);
 	}
 	else // if loop isn't called by autopad and loop_lvl == 1
 	{
-		if ((out->len - out->i) < (buf->i * nlaps))
+		if ((out->len - out->i) < buf_start + ((buf->i - buf_start) * nlaps))
 		{
-			out->str = realloc(out->str, out->len + (buf->i * nlaps));
-			out->len += (buf->i * nlaps);
+			out->str = realloc(out->str, out->len + ((buf->i - buf_start) * nlaps));
+			out->len += ((buf->i - buf_start) * nlaps);
 		}
 		for (uint32_t a = 0; a < nlaps; a++)
 		{
-			memcpy(out->str + out->i, buf->str, buf->i);
-			out->i += buf->i;
+			memcpy(out->str + out->i, buf->str, (buf->i - buf_start));
+			out->i += (buf->i - buf_start);
 		}
 		buf->i = 0;
 	}
@@ -71,14 +63,13 @@ static void		copy_unrolled_loop(t_out *out, t_ustr *buf, t_data *data)
 uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 {
 	const uint32_t		start_line = in->line;
+	uint32_t			buf_start = buf->i;
 	uint32_t			error = 0;
 
 	// skip '('
 	in->i++;
 
 	data->loop_lvl++;
-//	dprintf(2, "loop_%u.content = [ %c ]\n",
-//			data->loop_lvl, in->str[in->i]);
 
 	// read the loop content
 	while (in->i < in->len)
@@ -102,12 +93,10 @@ uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 		{
 			error += get_laps(in, &data->param1);
 			if (!error)
-				copy_unrolled_loop(out, buf, data);
+				copy_unrolled_loop(out, buf, data, buf_start);
 			else
 				buf->i = 0;
 			data->loop_lvl--;
-//			dprintf(2, "(2) loop_%u.content = [ %.*s ]\n",
-//				data->loop_lvl, (int)(in->len - in->i), in->str + in->i);
 			return (error);
 		}
 		else
@@ -123,7 +112,10 @@ uint32_t	get_loop(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 				return (error + 1);
 			}
 			else
+			{
 				error += call[index](in, out, data, buf);
+				continue ;
+			}
 		}
 		in->i++;
 	}

@@ -23,5 +23,6 @@ uint32_t	get_character(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 
 	if (len_is_0(in) || in->str[in->i] != '\'')
 		return (err_missing_quote(in));
+	in->i++;
 	return (0);
 }

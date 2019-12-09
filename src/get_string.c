@@ -27,5 +27,6 @@ uint32_t	get_string(t_in *in, t_out *out, t_data *data, t_ustr *buf)
 
 		in->i++;
 	}
+	in->i++;
 	return (0);
 }
